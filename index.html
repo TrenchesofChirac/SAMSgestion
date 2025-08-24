@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VCMC - Prise de Service & Admin</title>
+<style>
+:root{
+  --bg:#0a2a35; --panel:#14475a; --accent:#ff6600; --ok:#00aa88; --danger:#cc0000; --muted:#0e3644;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#fff;}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--accent);font-weight:700;}
+header .brand{display:flex;gap:10px;align-items:center;}
+header .brand span{font-size:20px;}
+header .actions button{margin-left:8px;}
+.wrap{max-width:1100px;margin:24px auto;padding:0 16px;}
+.card{background:var(--panel);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+h2{margin:0 0 12px 0;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+input,select,button{width:100%;padding:10px;border:none;border-radius:8px;}
+input,select{background:#0e3644;color:#fff;}
+button{cursor:pointer;font-weight:700;background:var(--ok);color:#fff;}
+button.secondary{background:#274e5e;}
+button.danger{background:#cc0000;}
+button.warning{background:#b36b00;}
+button.accent{background:#ff6600;color:#000;}
+.row{display:flex;gap:8px;align-items:center;}
+table{width:100%;border-collapse:collapse;background:#0d3a49;border-radius:12px;overflow:hidden;}
+th,td{padding:10px;text-align:left;border-bottom:1px solid #164e61;}
+th{background:#0b2f3b;}
+.right{text-align:right;}
+.hidden{display:none;}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#0e3644;}
+.note{font-size:12px;color:#cfe7ef;}
+#full-table th,#full-table td{padding:8px;border:1px solid #164e61;text-align:left;}
+#full-table th{background:#0b2f3b;}
+#full-table td{background:#0d3a49;}
+#full-table button{padding:4px 8px;border:none;border-radius:6px;background:#ff6600;color:#000;cursor:pointer;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span>🚑</span><span>SAMS • Prise de Service</span></div>
+  <div class="actions">
+    <button id="btnAdmin" class="secondary hidden" onclick="toggleAdmin()">Panneau Admin</button>
+    <button id="btnLogout" class="danger hidden" onclick="logout()">Déconnexion</button>
+    <button id="btnSettings" class="secondary hidden" onclick="openSettings()">Paramètres</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- Connexion -->
+  <div class="card" id="login-card">
+    <h2>Connexion</h2>
+    <div class="grid">
+      <input id="username" placeholder="Nom d'utilisateur">
+      <input id="password" type="password" placeholder="Mot de passe">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button onclick="login()" class="accent">Se connecter</button>
+    </div>
+    <p class="note" style="margin-top:8px">Comptes par défaut : <b>admin/admin123</b> • <b>vcmc/medic</b></p>
+  </div>
+
+  <!-- Tableau personnel -->
+  <div class="card hidden" id="service-card">
+    <h2>Tableau de Service</h2>
+    <div class="grid">
+      <div>
+        <div><b>Prénom :</b> <span id="w-firstname" class="badge"></span></div>
+        <div><b>Nom de famille :</b> <span id="w-lastname" class="badge"></span></div>
+        <div><b>Grade :</b> <span id="w-grade" class="badge"></span></div>
+        <div><b>Unité :</b> <span id="w-unite" class="badge"></span></div>
+        <div><b>Agrégation :</b> <span id="w-agreg" class="badge"></span></div>
+      </div>
+      <div>
+        <div><b>Statut :</b> <span id="w-status">Hors service</span></div>
+        <div><b>Temps total :</b> <span id="w-time">0s</span></div>
+        <div><b>Salaire horaire :</b> <span id="w-rate">$0</span></div>
+        <div><b>Salaire total :</b> <span id="w-sal">$0</span></div>
+        <div><b>Code :</b><select id="w-code"></select></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnService" onclick="toggleService()">Début de Service</button>
+    </div>
+  </div>
+
+  <!-- Admin -->
+  <div class="card hidden" id="admin-card">
+    <h2>Administration</h2>
+    <div class="grid">
+      <input id="adm-new-firstname" placeholder="Prénom">
+      <input id="adm-new-lastname" placeholder="Nom de famille">
+      <input id="adm-new-username" placeholder="Nom d'utilisateur">
+      <input id="adm-new-password" type="password" placeholder="Mot de passe">
+      <input id="adm-new-phone" placeholder="Téléphone">
+      <select id="adm-new-grade"></select>
+      <input id="adm-new-unite" placeholder="Unité">
+      <input id="adm-new-agreg" placeholder="Agrégation(s)">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="accent" onclick="adminCreateUser()">Créer le compte</button>
+      <button class="warning" onclick="resetAll()">Remettre à zéro</button>
+    </div>
+    <h3 style="margin-top:16px">Employés</h3>
+    <div class="card" style="background:var(--muted)">
+      <table id="adm-table">
+        <thead>
+          <tr>
+            <th>Prénom</th>
+            <th>Nom de famille</th>
+            <th>Grade</th>
+            <th>Unité</th>
+            <th>Agrégation</th>
+            <th>Téléphone</th>
+            <th class="right">Temps</th>
+            <th class="right">Salaire</th>
+            <th>Code</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="adm-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paramètres utilisateur -->
+  <div class="card hidden" id="settings-card">
+    <h2>Paramètres</h2>
+    <div class="grid">
+      <input id="settings-username" placeholder="Nouvel identifiant">
+      <input id="settings-password" type="password" placeholder="Nouveau mot de passe">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="accent" onclick="changeCredentials()">Enregistrer</button>
+    </div>
+  </div>
+
+  <!-- Tableau complet employés en service -->
+  <div class="card" id="full-table-card">
+    <h2>Employés en service</h2>
+    <table id="full-table">
+      <thead>
+        <tr>
+          <th>Prénom</th>
+          <th>Nom de famille</th>
+          <th>Grade</th>
+          <th>Agrégation(s)</th>
+          <th>Unité(s)</th>
+          <th>Code</th>
+          <th>Début du service</th>
+          <th>Temps total</th>
+          <th>Salaire total</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const GRADES=['Grand Directeur','Directeur Adjoint','Chef de Service','Superviseur','Médecin Titulaire','Infirmier','Aide-Soignant','Stagiaire'];
+const RATES={'Grand Directeur':25000,'Directeur Adjoint':20000,'Chef de Service':18000,'Superviseur':15000,'Médecin Titulaire':13000,'Infirmier':6500,'Aide-Soignant':5000,'Stagiaire':0};
+const ADMIN_GRADES=['Grand Directeur','Directeur Adjoint','Chef de Service','Superviseur'];
+const CODES=[
+  'Code 6 ⚕️','Code 3 🚑','Code 0 🤯','Code 1 🩹','Code 7 ☕','Code 10 🦴',
+  'Code 10 🔧','Code 15 🚓','Morgue ⚰️','Fusillade 💀','Consultation 🩺',
+  'Entretien 📋','Formation 🏥','Examen 🎓','Rendez-vous 📆','Convocation 👥',
+  'Événement 🎉','Réunion 🚨','Gestion Direction 💼','Développement Intranet 💻'
+];
+let currentUser = null;
+
+// Helpers
+function idxKey(){ return 'users_index'; }
+function userKey(u){ return 'user_'+u; }
+function loadIndex(){ return JSON.parse(localStorage.getItem(idxKey())||'[]'); }
+function saveIndex(arr){ localStorage.setItem(idxKey(),JSON.stringify(arr)); }
+function getUser(u){ const raw=localStorage.getItem(userKey(u)); return raw?JSON.parse(raw):null; }
+function saveUser(u,obj){ localStorage.setItem(userKey(u),JSON.stringify(obj)); if(!loadIndex().includes(u)){ const i=loadIndex(); i.push(u); saveIndex(i); } }
+
+// Defaults
+function ensureDefaults(){
+  if(!getUser('admin')) saveUser('admin',{firstname:'Admin',lastname:'Direction',username:'admin',password:'admin123',grade:'Grand Directeur',unite:'VCMC',agregation:'Direction',phone:'',totalSeconds:0,totalSalary:0,enService:false,startTime:null,code:CODES[0]});
+  if(!getUser('vcmc')) saveUser('vcmc',{firstname:'VCMC',lastname:'Urgences',username:'vcmc',password:'medic',grade:'Infirmier',unite:'VCMC',agregation:'Urgences',phone:'',totalSeconds:0,totalSalary:0,enService:false,startTime:null,code:CODES[0]});
+}
+
+// Formatters
+function fmtTime(sec){ sec=Math.max(0,Math.floor(sec||0)); const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60; return `${h}h ${m}m ${s}s`; }
+function fmtMoney(n){ return `$${(n||0).toLocaleString('en-US',{maximumFractionDigits:0})}`; }
+function fillSelect(sel,arr){ sel.innerHTML=arr.map(v=>`<option value="${v}">${v}</option>`).join(''); }
+
+// Auth
+function login(){
+  const u=document.getElementById('username').value.trim();
+  const p=document.getElementById('password').value;
+  const obj=getUser(u);
+  if(!obj){ alert('Compte introuvable'); return; }
+  if(obj.password!==p){ alert('Mot de passe incorrect'); return; }
+  currentUser=u;
+  document.getElementById('btnLogout').classList.remove('hidden');
+  document.getElementById('btnSettings').classList.remove('hidden');
+  document.getElementById('btnAdmin').classList.toggle('hidden',!ADMIN_GRADES.includes(obj.grade));
+  document.getElementById('login-card').classList.add('hidden');
+  document.getElementById('service-card').classList.remove('hidden');
+  renderUser(); buildAdmin(); renderFullTable();
+}
+
+function logout(){
+  currentUser=null;
+  document.getElementById('service-card').classList.add('hidden');
+  document.getElementById('admin-card').classList.add('hidden');
+  document.getElementById('settings-card').classList.add('hidden');
+  document.getElementById('btnLogout').classList.add('hidden');
+  document.getElementById('btnAdmin').classList.add('hidden');
+  document.getElementById('btnSettings').classList.add('hidden');
+  document.getElementById('login-card').classList.remove('hidden');
+}
+
+function current(){ return getUser(currentUser); }
+function persistCurrent(obj){ saveUser(currentUser,obj); }
+
+// Render User
+function renderUser(){
+  const u=current(); if(!u) return;
+  document.getElementById('w-firstname').textContent = u.firstname;
+  document.getElementById('w-lastname').textContent = u.lastname;
+  document.getElementById('w-grade').textContent = u.grade;
+  document.getElementById('w-unite').textContent = u.unite||'';
+  document.getElementById('w-agreg').textContent = u.agregation||'';
+  document.getElementById('w-status').textContent = u.enService?'En service':'Hors service';
+  let elapsed = u.enService ? Math.floor((Date.now() - u.startTime)/1000) : 0;
+  document.getElementById('w-time').textContent = fmtTime(u.totalSeconds + elapsed);
+  document.getElementById('w-rate').textContent = fmtMoney(RATES[u.grade]||0)+' / h';
+  document.getElementById('w-sal').textContent = fmtMoney(u.totalSalary + (RATES[u.grade]||0)/3600*elapsed);
+  document.getElementById('btnService').textContent = u.enService?'Fin de Service':'Début de Service';
+  const codeSelect=document.getElementById('w-code');
+  fillSelect(codeSelect,CODES); codeSelect.value = u.code||CODES[0];
+}
+
+// Toggle service
+function toggleService(){
+  const u=current(); if(!u) return;
+  if(!u.enService){ u.enService=true; u.startTime=Date.now(); }
+  else{
+    const now=Date.now();
+    const sec=Math.floor((now-(u.startTime||now))/1000);
+    u.totalSeconds+=sec;
+    u.totalSalary+=(RATES[u.grade]||0)/3600*sec;
+    u.enService=false; u.startTime=null;
+  }
+  persistCurrent(u);
+  renderUser(); renderFullTable();
+}
+
+// Render full table
+function renderFullTable(){
+  const tbody=document.querySelector('#full-table tbody');
+  const users=loadIndex().map(u=>getUser(u));
+  tbody.innerHTML = users.filter(u=>u.enService || u.startTime).map(u=>{
+    let elapsed = u.enService ? Math.floor((Date.now()-u.startTime)/1000) : 0;
+    let totalSec = u.totalSeconds + elapsed;
+    let totalSal = u.totalSalary + (RATES[u.grade]||0)/3600*elapsed;
+    return `<tr>
+      <td>${u.firstname}</td>
+      <td>${u.lastname}</td>
+      <td>${u.grade}</td>
+      <td>${u.agregation||''}</td>
+      <td>${u.unite||''}</td>
+      <td>${u.code}</td>
+      <td>${u.startTime ? new Date(u.startTime).toLocaleString() : '-'}</td>
+      <td>${fmtTime(totalSec)}</td>
+      <td>${fmtMoney(totalSal)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Admin
+function toggleAdmin(){ document.getElementById('admin-card').classList.toggle('hidden'); if(!document.getElementById('admin-card').classList.contains('hidden')) buildAdmin(); }
+function adminCreateUser(){
+  const f=document.getElementById('adm-new-firstname').value.trim();
+  const l=document.getElementById('adm-new-lastname').value.trim();
+  const u=document.getElementById('adm-new-username').value.trim();
+  const p=document.getElementById('adm-new-password').value;
+  const ph=document.getElementById('adm-new-phone').value.trim();
+  const g=document.getElementById('adm-new-grade').value;
+  const un=document.getElementById('adm-new-unite').value.trim();
+  const ag=document.getElementById('adm-new-agreg').value.trim();
+  if(!u||!p){ alert('Nom et mot de passe requis'); return; }
+  if(getUser(u)){ alert('Ce nom existe déjà'); return; }
+  saveUser(u,{firstname:f,lastname:l,username:u,password:p,grade:g,unite:un,agregation:ag,phone:ph,totalSeconds:0,totalSalary:0,enService:false,startTime:null,code:CODES[0]});
+  buildAdmin();
+}
+
+function buildAdmin(){
+  const me=current(); if(!me || !ADMIN_GRADES.includes(me.grade)) return;
+  const tbody=document.getElementById('adm-body');
+  tbody.innerHTML = loadIndex().map(u=>{
+    const o=getUser(u);
+    return `<tr data-u="${u}">
+      <td><input value="${o.firstname}"></td>
+      <td><input value="${o.lastname}"></td>
+      <td><select>${GRADES.map(g=>`<option value="${g}" ${g===o.grade?'selected':''}>${g}</option>`)}</select></td>
+      <td><input value="${o.unite||''}"></td>
+      <td><input value="${o.agregation||''}"></td>
+      <td><input value="${o.phone||''}"></td>
+      <td class="right">${fmtTime(o.totalSeconds)}</td>
+      <td class="right">${fmtMoney(o.totalSalary)}</td>
+      <td><select>${CODES.map(c=>`<option value="${c}" ${c===o.code?'selected':''}>${c}</option>`)}</select></td>
+      <td>${o.enService?'En service':'Hors service'}</td>
+      <td>
+        <button onclick="admSave('${u}',this)">Enregistrer</button>
+        <button onclick="admDelete('${u}')">Supprimer</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function admSave(u,btn){
+  const tr=btn.closest('tr'); if(!tr) return;
+  const o=getUser(u); if(!o) return;
+  o.firstname=tr.cells[0].querySelector('input').value.trim();
+  o.lastname=tr.cells[1].querySelector('input').value.trim();
+  o.grade=tr.cells[2].querySelector('select').value;
+  o.unite=tr.cells[3].querySelector('input').value.trim();
+  o.agregation=tr.cells[4].querySelector('input').value.trim();
+  o.phone=tr.cells[5].querySelector('input').value.trim();
+  o.code=tr.cells[8].querySelector('select').value;
+  saveUser(u,o);
+  if(u===currentUser) renderUser();
+  renderFullTable();
+}
+
+function admDelete(u){
+  if(!confirm(`Confirmer la suppression de ${u} ?`)) return;
+  saveIndex(loadIndex().filter(name=>name!==u));
+  localStorage.removeItem(userKey(u));
+  if(currentUser===u) logout();
+  buildAdmin(); renderFullTable();
+}
+
+function resetAll(){
+  if(!confirm('Remise à zéro de tous les employés ?')) return;
+  loadIndex().forEach(u=>{
+    const o=getUser(u);
+    o.totalSeconds=0; o.totalSalary=0; o.enService=false; o.startTime=null; o.code=CODES[0];
+    saveUser(u,o);
+  });
+  renderFullTable(); renderUser(); buildAdmin();
+}
+
+// Settings
+function openSettings(){
+  document.getElementById('settings-card').classList.toggle('hidden');
+  const u=current(); if(u) document.getElementById('settings-username').value=u.username;
+}
+
+function changeCredentials(){
+  const newU=document.getElementById('settings-username').value.trim();
+  const newP=document.getElementById('settings-password').value;
+  if(!newU||!newP){ alert('Remplir les deux champs'); return; }
+  const oldU=currentUser; const o=getUser(oldU); if(!o) return;
+  let idx=loadIndex().filter(n=>n!==oldU); idx.push(newU); saveIndex(idx);
+  localStorage.removeItem(userKey(oldU));
+  o.username=newU; o.password=newP;
+  saveUser(newU,o); currentUser=newU;
+  alert('Identifiant et mot de passe changés avec succès');
+  renderUser(); buildAdmin(); renderFullTable();
+}
+
+// Init
+document.addEventListener('DOMContentLoaded',()=>{
+  ensureDefaults();
+  fillSelect(document.getElementById('adm-new-grade'),GRADES);
+  document.getElementById('w-code').addEventListener('change',()=>{
+    const u=current(); if(!u) return;
+    u.code=document.getElementById('w-code').value;
+    persistCurrent(u); renderFullTable(); if(ADMIN_GRADES.includes(u.grade)) buildAdmin();
+  });
+  setInterval(()=>{ const u=current(); if(u && u.enService){ renderUser(); renderFullTable(); } },1000);
+});
+</script>
+</body>
+</html>
