@@ -185,6 +185,7 @@ function saveUser(u,obj){ localStorage.setItem(userKey(u),JSON.stringify(obj)); 
 function ensureDefaults(){
   if(!getUser('admin')) saveUser('admin',{firstname:'Admin',lastname:'Direction',username:'admin',password:'admin123',grade:'Grand Directeur',unite:'VCMC',agregation:'Direction',phone:'',totalSeconds:0,totalSalary:0,enService:false,startTime:null,code:CODES[0]});
   if(!getUser('vcmc')) saveUser('vcmc',{firstname:'VCMC',lastname:'Urgences',username:'vcmc',password:'medic',grade:'Infirmier',unite:'VCMC',agregation:'Urgences',phone:'',totalSeconds:0,totalSalary:0,enService:false,startTime:null,code:CODES[0]});
+  if(!getUser('max')) saveUser('vcmc',{firstname:'VCMC',lastname:'Urgences',username:'max',password:'loudanie',grade:'Infirmier',unite:'VCMC',agregation:'Urgences',phone:'',totalSeconds:0,totalSalary:0,enService:false,startTime:null,code:CODES[0]});
 }
 
 // Formatters
@@ -384,3 +385,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
